@@ -31,3 +31,5 @@ services:
       ADAPTER: slack
       SLACK_APP_TOKEN:
       HUBOT_SLACK_TOKEN:
+      FLUENTD_HOST:
+      FLUENTD_PORT:

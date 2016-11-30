@@ -48,7 +48,7 @@ class Archive
     @robot.logger.debug 'joining'
     return _adapter.exec(msg, 'join', channel.name)
     .then (res) ->
-      _robot.logger.debug 'join: '+res+', -> setTopic'
+      _robot.logger.debug 'join: ' + res + ', -> setTopic'
       return _adapter.exec(msg, 'setTopic', channel.id, channel.name)
       .then (res) ->
         _robot.logger.debug 'setTopic: '+res+' , -> archive'

@@ -22,7 +22,6 @@
 # adapter administration script
 
 Promise = require 'bluebird'
-
 module.exports = (robot) ->
   archive = new (require '../lib/archive')(robot)
   _this = @
@@ -76,7 +75,7 @@ module.exports = (robot) ->
       '" older than '+msg.match[1]+timeType+' by '+type
     archive.archive_old(msg, seconds, patterns, room, type)
     .then (response) ->
-      robot.logger.debug 'back from Promise', response
+      _robot.logger.debug "back from Promise {#response}"
       msg.reply 'done, total archived: '+response.totalArchived
     .catch (e) ->
       _robot.logger.debug e

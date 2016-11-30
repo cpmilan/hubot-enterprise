@@ -24,7 +24,6 @@ auth_service = require('he-auth-service')
 auth_client = auth_service.client
 auth_lib = auth_service.lib
 promisified_client = Promise.promisifyAll(auth_client)
-
 TYPES =
   BASIC_AUTH: auth_lib.authMethods.BASIC_AUTH
 

@@ -21,7 +21,6 @@
 
 _ = require 'lodash'
 Matcher = require 'did-you-mean'
-
 class Help
 
   # constructor for help

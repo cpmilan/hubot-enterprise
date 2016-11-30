@@ -22,6 +22,7 @@
     "coffee-script": "1.6.3",
     "did-you-mean": "^0.0.1",
     "easy-table": "^1.0.0",
+    "fluent-logger": "^2.2.0",
     "he-auth-service": "github:eedevops/he-auth-service",
     "insight": "^0.8.2",
     "jsonwebtoken": "^7.1.9",
@@ -30,7 +31,8 @@
     "nock": "^8.1.0",
     "node-jose": "^0.9.1",
     "node-uuid": "^1.4.7",
-    "request": "^2.69.0"
+    "request": "^2.69.0",
+    "winston": "^2.2.0"
   },
   "peerDependencies": {
     "hubot": "2.x"

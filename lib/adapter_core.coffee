@@ -28,7 +28,6 @@ fs = require 'fs'
 Promise = require 'bluebird'
 adapters_path = __dirname+'/advanced_adapter/adapter-'
 table = require 'easy-table'
-
 #list of advanced commands: with elevated permissions
 advanced_commands = []
 
@@ -66,7 +65,7 @@ class AdapterCore
     _adapter = @adapter
     return new Promise (resolve, reject) ->
       _robot.logger.debug "Adapter CORE: request to exec #{command} with "+
-        "params: ", params
+        "params: {#params}"
       # reject promise  if no adapter (can be cougnt using .catch function)
       if not _adapter[command]
         _robot.logger.debug "command #{command} not available for adapter "+
