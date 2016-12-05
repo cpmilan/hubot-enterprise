@@ -69,7 +69,7 @@ module.exports = (robot) ->
   consoleOpts = {
     colorize: true,
     timestamp: true,
-    level: process.env.LOG_LEVEL || 'debug'  
+    level: process.env.LOG_LEVEL || 'debug'
   }
 
   transports = [new(winstonLogger.transports.Console)(consoleOpts)]
@@ -89,7 +89,9 @@ module.exports = (robot) ->
   winstonLogger.configure({
     transports: transports,
     exitOnError: false
-  })  
+  })
+  winstonLogger.setLevels(winstonLogger.config.syslog.levels)
+
   robot.logger = winstonLogger
   # load scripts to robot
   load_he_scripts = (path) ->
