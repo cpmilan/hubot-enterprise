@@ -36,6 +36,7 @@ describe 'hubot-admin tests', ->
     @room.destroy()
 
   it 'admin archive older 5s', ->
+    this.timeout(8000)
     @room.user.say('alice', '@hubot admin archive older 5s').then =>
       expect(@room.messages).to.eql [
         [ 'alice', '@hubot admin archive older 5s' ],

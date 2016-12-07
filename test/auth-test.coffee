@@ -41,8 +41,6 @@ describe 'Authentication', ->
     long_desc: 'Blah blah blah blah blah blah blah'
     name: 'mock-auth-integration'
 
-  params = {}
-
   beforeEach ->
     @room = helper.createRoom()
 
@@ -53,8 +51,20 @@ describe 'Authentication', ->
   # TODO: test when environment variables are not correctly set
 
   it 'should specify authentication method via integration registration', ->
+    # Empty object params are allowed in basic_auth
+    basic_auth = @room.robot.e.auth.generate_basic_auth({})
+    expect(basic_auth).have.keys(['type', 'params'])
+
+    params =
+      endpoint:
+        url: "http://mybasicauthserver.example.com"
+        verb: "GET"
+
     basic_auth = @room.robot.e.auth.generate_basic_auth(params)
     expect(basic_auth).have.keys(['type', 'params'])
+    expect(basic_auth.params.endpoint).to.exist.and.to.be.an('object')
+    expect(basic_auth.params.endpoint.url).to.exist.and.to.be.a('string')
+    expect(basic_auth.params.endpoint.verb).to.exist.and.to.be.a('string')
     @room.robot.e.registerIntegration(metadata, basic_auth)
 
   it 'should fail registration when using unsupported authentication' +
@@ -86,9 +96,10 @@ describe 'Authentication', ->
     done(new Error('did not throw expected exception'))
 
   it 'should load integration without authentication', ->
+    # If it doesn't blow up with an exception, everything went well :)
     @room.robot.e.registerIntegration(metadata, null)
 
-  describe 'BasicAuthentication', ->
+  describe 'Test Auth Flows and Service Integrations', ->
     metadata =
       short_desc: 'Basic Auth Example'
       long_desc: 'Showcases how to write an integration ' +
@@ -121,7 +132,12 @@ describe 'Authentication', ->
 
     beforeEach ->
       # register module
-      basic_auth = @room.robot.e.auth.generate_basic_auth({})
+      params =
+        endpoint:
+          url: "http://mybasicauthserver.example.com"
+          verb: "GET"
+
+      basic_auth = @room.robot.e.auth.generate_basic_auth(params)
       @room.robot.e.registerIntegration(metadata, basic_auth)
 
     it 'should perform integration command when secrets exist', (done) ->
@@ -380,3 +396,350 @@ describe 'Authentication', ->
         ASYNC_MESSAGE_TIMEOUT)
       .catch (e) ->
         done(e)
+
+  describe 'Test BasicAuth', ->
+    metadata =
+      short_desc: 'Basic Auth Example'
+      long_desc: 'Showcases how to write an integration ' +
+        'that uses BasicAuthentication'
+      name: "basic_auth"
+
+    command_params =
+      verb: 'get'
+      entity: 'something'
+      type: 'respond'
+
+    integration_name = 'basic_auth'
+
+    it 'Should fail if basic auth config has invalid endpoint configs', (done) ->
+      this.timeout(5000)
+      # Endpoint is null
+      basic_auth =
+        type: auth_lib.TYPES.BASIC_AUTH
+        params:
+          endpoint: null
+      try
+        @room.robot.e.registerIntegration(metadata, basic_auth)
+        return done(new Error('Should have failed with null endpoint'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+          .to
+          .equal(auth_lib.errors.failed_validation.toString())
+
+      # Change it to a string
+      basic_auth.params.endpoint = ""
+      try
+        @room.robot.e.registerIntegration(metadata, basic_auth)
+        return done(new Error('Should have failed with endpoint with string value'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+          .to
+          .equal(auth_lib.errors.failed_validation.toString())
+
+      # Change it to a string
+      basic_auth.params.endpoint = 0
+      try
+        @room.robot.e.registerIntegration(metadata, basic_auth)
+        return done(new Error('Should have failed with endpoint with numeric value'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+          .to
+          .equal(auth_lib.errors.failed_validation.toString())
+
+      # Change it to an empty object
+      basic_auth.params.endpoint = {}
+      try
+        @room.robot.e.registerIntegration(metadata, basic_auth)
+        return done(new Error('Should have failed with endpoint with an empty object value'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+          .to
+          .equal(auth_lib.errors.failed_validation.toString())
+
+      # Endpoint with null url
+      basic_auth.params.endpoint =
+        url: null
+        verb: "SOMETHING"
+      try
+        @room.robot.e.registerIntegration(metadata, basic_auth)
+        return done(new Error('Should have failed with endpoint with null url'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+          .to
+          .equal(auth_lib.errors.failed_validation.toString())
+
+      # Endpoint with no verb
+      basic_auth.params.endpoint =
+        url: "http://basic_auth_server.example.com"
+      try
+        @room.robot.e.registerIntegration(metadata, basic_auth)
+        return done(new Error('Should have failed with non-existing endpoint verb'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+          .to
+          .equal(auth_lib.errors.failed_validation.toString())
+
+      # Endpoint with null verb
+      basic_auth.params.endpoint =
+        url: "http://basic_auth_server.example.com"
+        verb: null
+      try
+        @room.robot.e.registerIntegration(metadata, basic_auth)
+        return done(new Error('Should have failed with non-existing endpoint verb'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+          .to
+          .equal(auth_lib.errors.failed_validation.toString())
+
+      # Endpoint with verb with strange value
+      basic_auth.params.endpoint =
+        url: "http://basic_auth_server.example.com"
+        verb: 9
+      try
+        @room.robot.e.registerIntegration(metadata, basic_auth)
+        return done(new Error('Should have failed with unsupported value endpoint verb'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+          .to
+          .equal(auth_lib.errors.failed_validation.toString())
+
+      # Endpoint with unsupported verb
+      basic_auth.params.endpoint =
+        url: "http://basic_auth_server.example.com"
+        verb: "SOMETHING"
+      try
+        @room.robot.e.registerIntegration(metadata, basic_auth)
+        return done(new Error('Should have failed with unsupported endpoint verb'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+          .to
+          .equal(auth_lib.errors.failed_validation.toString())
+
+      # Endpoint with valid verb but not well formed
+      basic_auth.params.endpoint =
+        url: "http://basic_auth_server.example.com"
+        verb: "Get"
+      try
+        @room.robot.e.registerIntegration(metadata, basic_auth)
+        return done(new Error('Should have failed with unsupported endpoint verb'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+          .to
+          .equal(auth_lib.errors.failed_validation.toString())
+
+      done()
+
+      basic_auth = @room.robot.e.auth.generate_basic_auth({})
+      @room.robot.e.registerIntegration(metadata, basic_auth)
+
+    it 'Should be successful if registered with valid basic auth info', (done) ->
+      basic_auth =
+        type: auth_lib.TYPES.BASIC_AUTH
+        params:
+          url: "http://mybasicauth.example.com"
+          verb: "GET"
+      try
+        @room.robot.e.registerIntegration(metadata, basic_auth)
+        done()
+      catch e
+        done(e)
+
+    it 'Should be successful if registered with valid info generated with helper', (done) ->
+      params =
+          url: "http://mybasicauth.example.com"
+          verb: "GET"
+      basic_auth = @room.robot.e.auth.generate_basic_auth(params)
+      try
+        @room.robot.e.registerIntegration(metadata, basic_auth)
+        done()
+      catch e
+        done(e)
+
+  describe 'Test IdM Auth', ->
+    reg =
+      short_desc: 'IdM Auth Example'
+      long_desc: 'Showcases how to write an integration ' +
+        'that uses IdmAuth'
+      name: "idm_auth"
+
+    it 'Should be successful if registered with valid idm auth info', (done) ->
+      idm_auth =
+        type: auth_lib.TYPES.IDM_AUTH
+        params:
+          endpoint:
+            verb: "POST"
+            url: "http://myidmservice.example.com"
+      try
+        @room.robot.e.registerIntegration(metadata, idm_auth)
+        done()
+      catch e
+        done(e)
+
+    it 'Should be successful if registered with valid idm info generated with helper', (done) ->
+      params =
+        endpoint:
+          verb: "POST"
+          url: "http://myidmservice.example.com"
+      idm_auth = @room.robot.e.auth.generate_idm_auth(params)
+      try
+        @room.robot.e.registerIntegration(metadata, idm_auth)
+        done()
+      catch e
+        done(e)
+
+    it 'Should fail if basic auth config has invalid endpoint configs', (done) ->
+      this.timeout(5000)
+      # Params are undef
+      idm_auth =
+        type: auth_lib.TYPES.IDM_AUTH
+
+      try
+        @room.robot.e.registerIntegration(reg, idm_auth)
+        return done(new Error('Should have failed with undefined params'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+        .to
+        .equal(auth_lib.errors.failed_validation.toString())
+
+      # Endpoint params are empty
+      idm_auth =
+        type: auth_lib.TYPES.IDM_AUTH
+        params: {}
+      try
+        @room.robot.e.registerIntegration(reg, idm_auth)
+        return done(new Error('Should have failed with empty params'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+        .to
+        .equal(auth_lib.errors.failed_validation.toString())
+
+      # Endpoint params empty endpoint
+      idm_auth =
+        type: auth_lib.TYPES.IDM_AUTH
+        params:
+          endpoint: {}
+
+      try
+        @room.robot.e.registerIntegration(reg, idm_auth)
+        return done(new Error('Should have failed with empty endpoint'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+        .to
+        .equal(auth_lib.errors.failed_validation.toString())
+
+      # Endpoint params missing verb
+      idm_auth =
+        type: auth_lib.TYPES.IDM_AUTH
+        params:
+          endpoint:
+            url: "http://myidmservice.example.com"
+      try
+        @room.robot.e.registerIntegration(reg, idm_auth)
+        return done(new Error('Should have failed with missing verb'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+        .to
+        .equal(auth_lib.errors.failed_validation.toString())
+
+      # Endpoint params missing url
+      idm_auth =
+        type: auth_lib.TYPES.IDM_AUTH
+        params:
+          endpoint:
+            verb: "POST"
+      try
+        @room.robot.e.registerIntegration(reg, idm_auth)
+        return done(new Error('Should have failed with missing url'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+        .to
+        .equal(auth_lib.errors.failed_validation.toString())
+
+      # Endpoint params empty url
+      idm_auth =
+        type: auth_lib.TYPES.IDM_AUTH
+        params:
+          endpoint:
+            url: ""
+            verb: "POST"
+      try
+        @room.robot.e.registerIntegration(reg, idm_auth)
+        return done(new Error('Should have failed with empty url'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+        .to
+        .equal(auth_lib.errors.failed_validation.toString())
+
+      # Endpoint params with invalid url
+      idm_auth =
+        type: auth_lib.TYPES.IDM_AUTH
+        params:
+          endpoint:
+            url: {}
+            verb: "POST"
+
+      # Endpoint params null url
+      idm_auth =
+        type: auth_lib.TYPES.IDM_AUTH
+        params:
+          endpoint:
+            url: null
+            verb: "POST"
+      try
+        @room.robot.e.registerIntegration(reg, idm_auth)
+        return done(new Error('Should have failed with null url'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+        .to
+        .equal(auth_lib.errors.failed_validation.toString())
+
+      # Endpoint params with invalid url
+      idm_auth =
+        type: auth_lib.TYPES.IDM_AUTH
+        params:
+          endpoint:
+            url: {}
+            verb: "POST"
+      try
+        @room.robot.e.registerIntegration(reg, idm_auth)
+        return done(new Error('Should have failed with invalid type url'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+        .to
+        .equal(auth_lib.errors.failed_validation.toString())
+
+      # Endpoint params with unsupported verb
+      idm_auth =
+        type: auth_lib.TYPES.IDM_AUTH
+        params:
+          endpoint:
+            url: {}
+            verb: "SOMETHING_ELSE"
+      try
+        @room.robot.e.registerIntegration(reg, idm_auth)
+        return done(new Error('Should have failed with unsupported verb'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+        .to
+        .equal(auth_lib.errors.failed_validation.toString())
+
+      done()
