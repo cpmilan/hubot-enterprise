@@ -1,6 +1,6 @@
 {
   "name": "hubot-enterprise",
-  "version": "0.3.6",
+  "version": "0.4.0",
   "description": "Hubot middleware and scripts for enterprise",
   "main": "index.coffee",
   "repository": {
@@ -23,7 +23,7 @@
     "did-you-mean": "^0.0.1",
     "easy-table": "^1.0.0",
     "fluent-logger": "^2.2.0",
-    "he-auth-service": "github:eedevops/he-auth-service#v0.1.3",
+    "he-auth-service": "github:eedevops/he-auth-service#v0.1.4",
     "insight": "^0.8.2",
     "jsonwebtoken": "^7.1.9",
     "lodash": "^4.6.1",

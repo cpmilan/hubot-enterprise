@@ -266,17 +266,34 @@ module.exports = (robot) ->
       throw new Error('at least medatada.short_desc must be specified')
     metadata.long_desc = metadata.long_desc || metadata.short_desc
 
-    # check that auth existing and correct
-    if authentication && !authentication.type
-      throw robot.e.auth.errors.no_type
+    # Check that auth existing and correct.
+    if authentication
+      if !auth_client
+        throw robot.e.auth.errors.not_enabled
 
-    if authentication && !_.includes(robot.e.auth.TYPES, authentication.type)
-      throw robot.e.auth.errors.unsupported_type
+      if !authentication.type
+        throw robot.e.auth.errors.no_type
 
-    # TODO: verify that authentication.params is valid for the given type.
+      if !_.includes(robot.e.auth.TYPES, authentication.type)
+        throw robot.e.auth.errors.unsupported_type
 
-    if authentication && !auth_client
-      throw robot.e.auth.errors.not_enabled
+      validatedAuthentication = robot.e.auth
+        .validate_authentication(authentication)
+
+      if validatedAuthentication
+        authentication = validatedAuthentication
+      else
+        throw robot.e.auth.errors.failed_validation
+
+      robot.logger.info "Authentication was enabled for " +
+          "integration #{integration_name}"
+    else
+      robot.logger.info "No authentication method specified for " +
+          "#{integration_name} in registration"
+
+    robot.logger.debug "Successfully registerd #{integration_name} with:"
+    robot.logger.debug "Meta = #{JSON.stringify(metadata)}"
+    robot.logger.debug "Auth = #{JSON.stringify(authentication)}"
 
     registrar.apps[integration_name] = {
       metadata: metadata,
@@ -346,21 +363,27 @@ module.exports = (robot) ->
               urlProps:
                 ttl: registrar.apps[integration_name].auth.token_ttl? ||
                   auth.values.DEFAULT_TOKEN_TTL
+            robot.logger.debug("Need to authenticate.")
+            robot.logger.debug("Generating token_url with payload = " +
+                "#{JSON.stringify(token_url_info)}")
             msg.room = "@#{msg.envelope.user.name}"
             msg.reply commons.authentication_announcement(cmd)
             # Request a token_url to send to user.
             auth_client.generateTokenUrlAsync(token_url_info)
             .then (token_response) ->
-              # Send token_url to user
+              # Send token_url to users
+              robot.logger.info "Sending #{token_response.url} to #{msg.room}"
               robot.e.adapter.message(msg,
                 commons.authentication_message(cmd,token_response.url), true)
             .catch (e) ->
               # Something went wrong, cannot send token_url
+              robot.logger.error e
               robot.e.adapter.message(msg,
                 commons.authentication_error_message(e), true)
           else
             # Other errors which are not related to not being authenticated.
             # It is good UX to inform user of errors.
+            robot.logger.error e
             msg.reply commons.authentication_error_message(e)
 
     # Authentication is disabled by explicitly specifying auth: false in the
@@ -368,9 +391,13 @@ module.exports = (robot) ->
     something = auth_client and registrar.apps[integration_name]?.auth
     if something and info.auth != false
       # If authentication is enabled and integration has registered it
+      robot.logger.debug "Adding authentication to robot. " +
+          "#{info.type} #{re.toString()}"
       robot[info.type] re, authenticated_handler
     else
       # If no authentication needed, use this handler instead
+      robot.logger.debug "No authentication for robot.#{info.type}" +
+          "#{re.toString()}"
       robot[info.type] re, (msg) ->
         callback(msg, robot)
 
