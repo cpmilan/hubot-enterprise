@@ -743,3 +743,154 @@ describe 'Authentication', ->
         .equal(auth_lib.errors.failed_validation.toString())
 
       done()
+
+    it 'Should create auth object for idm auth using convenience method.', (done) ->
+      params =
+        endpoint:
+          verb: "POST"
+          url: "http://myidmservice.example.com"
+      try
+        idm_auth = @room.robot.e.auth.generate_idm_auth(params)
+        expect(idm_auth).to.exist
+        expect(idm_auth).to.have.keys(['type', 'params'])
+        expect(idm_auth.type).to.equal(auth_lib.TYPES.IDM_AUTH)
+        expect(idm_auth.params.endpoint).to.exist.and.be.an('object')
+        expect(idm_auth.params.endpoint).to.have.keys(['verb', 'url'])
+        expect(idm_auth.params.endpoint.verb).to.be.a('string').and.equal('POST')
+        expect(idm_auth.params.endpoint.url).to.exist.and.be.a('string')
+        done()
+      catch e
+        done(e)
+
+    it 'Should fail if params to convenience method has invalid values.', (done) ->
+      this.timeout(5000)
+      # Params are undef
+      try
+        @room.robot.e.auth.generate_idm_auth null
+        return done(new Error('Should have failed with undefined params'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+        .to
+        .equal('Error: Missing required params object or invalid type: null')
+
+      # Endpoint params are empty
+      try
+        @room.robot.e.auth.generate_idm_auth {}
+        return done(new Error('Should have failed with empty params'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+        .to
+        .equal('Error: Missing required endpoint or invalid type: undefined')
+
+      # Endpoint params empty endpoint
+      params =
+        endpoint: {}
+      try
+        @room.robot.e.auth.generate_idm_auth params
+        return done(new Error('Should have failed with empty endpoint'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+        .to
+        .equal('Error: Auth endpoint configuration is missing url: {}')
+
+      # Endpoint params missing verb
+      params =
+        endpoint:
+          url: "http://myidmservice.example.com"
+      try
+        @room.robot.e.auth.generate_idm_auth params
+        return done(new Error('Should have failed with missing verb'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+        .to
+        .equal('Error: Auth endpoint configuration is missing verb:' +
+            ' {\n  "url": "http://myidmservice.example.com"\n}')
+
+      # Endpoint params missing url
+      idm_auth =
+        type: auth_lib.TYPES.IDM_AUTH
+      params =
+        endpoint:
+          verb: "POST"
+      try
+        @room.robot.e.auth.generate_idm_auth params
+        return done(new Error('Should have failed with missing url'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+        .to
+        .equal('Error: Auth endpoint configuration is missing url:' +
+            ' {\n  "verb": "POST"\n}')
+
+      # Endpoint params empty url
+      params =
+        endpoint:
+          url: ""
+          verb: "POST"
+      try
+        @room.robot.e.auth.generate_idm_auth params
+        return done(new Error('Should have failed with empty url'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+        .to
+        .equal('Error: Auth endpoint configuration is missing url:' +
+            ' {\n  "url": "",\n  "verb": "POST"\n}')
+
+      # Endpoint params with invalid url
+      idm_auth =
+        type: auth_lib.TYPES.IDM_AUTH
+        params:
+          endpoint:
+            url: {}
+            verb: "POST"
+
+      # Endpoint params null url
+      params =
+        endpoint:
+          url: null
+          verb: "POST"
+      try
+        @room.robot.e.auth.generate_idm_auth params
+        return done(new Error('Should have failed with null url'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+        .to
+        .equal('Error: Auth endpoint configuration is missing url:' +
+            ' {\n  "url": null,\n  "verb": "POST"\n}')
+
+      # Endpoint params with invalid url
+      params =
+        endpoint:
+          url: {}
+          verb: "POST"
+      try
+        @room.robot.e.auth.generate_idm_auth params
+        return done(new Error('Should have failed with invalid type url'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+        .to
+        .equal('Error: Auth endpoint url is empty:' +
+            ' {\n  "url": {},\n  "verb": "POST"\n}')
+
+      # Endpoint params with unsupported verb
+      params =
+        endpoint:
+          url: "http://myidmauthserver.example.com"
+          verb: "SOMETHING_ELSE"
+      try
+        @room.robot.e.auth.generate_idm_auth params
+        return done(new Error('Should have failed with unsupported verb'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+        .to
+        .equal('Error: Auth endpoint verb is not supported: SOMETHING_ELSE')
+
+      done()

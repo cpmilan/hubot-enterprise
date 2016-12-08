@@ -176,12 +176,12 @@ generate_idm_auth = (params) ->
     msg = JSON.stringify(params, ' ', 2)
     msg = "Missing required params object or invalid type: #{params}"
     logger.error(msg)
-    return null
+    throw new Error(msg)
 
   if not params.endpoint? or typeof params.endpoint != "object"
     msg = "Missing required endpoint or invalid type: #{params.endpoint}"
     logger.error(msg)
-    return null
+    throw new Error(msg)
 
   try
     # Endpoint is required for IdM
