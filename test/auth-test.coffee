@@ -558,8 +558,20 @@ describe 'Authentication', ->
       params =
           url: "http://mybasicauth.example.com"
           verb: "GET"
-      basic_auth = @room.robot.e.auth.generate_basic_auth(params)
       try
+        basic_auth = @room.robot.e.auth.generate_basic_auth(params)
+        @room.robot.e.registerIntegration(metadata, basic_auth)
+        done()
+      catch e
+        done(e)
+
+    it 'Should be successful if registered with parametrized helper method', (done) ->
+
+      url = "http://mybasicauth.example.com"
+      verb = "GET"
+      try
+        basic_auth = @room.robot.e.auth.create_basic_auth_config(url, verb)
+        # TODO: verify basic_auth object
         @room.robot.e.registerIntegration(metadata, basic_auth)
         done()
       catch e
@@ -590,14 +602,180 @@ describe 'Authentication', ->
         endpoint:
           verb: "POST"
           url: "http://myidmservice.example.com"
-      idm_auth = @room.robot.e.auth.generate_idm_auth(params)
       try
+        idm_auth = @room.robot.e.auth.generate_idm_auth(params)
         @room.robot.e.registerIntegration(metadata, idm_auth)
         done()
       catch e
         done(e)
 
-    it 'Should fail if basic auth config has invalid endpoint configs', (done) ->
+    it 'Should be successful if registered with parametrized helper method', (done) ->
+      url = "http://myidmservice.example.com"
+      verb = "POST"
+      try
+        idm_auth = @room.robot.e.auth.create_idm_auth_config(url)
+        expect(idm_auth).to.exist
+        expect(idm_auth).to.have.keys(["type", "params"])
+        expect(idm_auth.type).to.equal(auth_lib.TYPES.IDM_AUTH)
+        expect(idm_auth.params).to.be.an('object')
+        expect(idm_auth.params.endpoint).to.exist.and.have.keys(["url", "verb"])
+        expect(idm_auth.params.endpoint.verb).to.equal(verb)
+        expect(idm_auth.params.endpoint.url).to.equal(url)
+        @room.robot.e.registerIntegration(metadata, idm_auth)
+        done()
+      catch e
+        done(e)
+
+    it 'Should fail if parametrized helper method has invalid inputs for url', (done) ->
+      url = ""
+      try
+        @room.robot.e.auth.create_idm_auth_config(url)
+        return done(new Error('Should have failed with empty url'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+        .to
+        .equal('Error: Auth endpoint configuration is missing url:' +
+            ' {\n  "url": "",\n  "verb": "POST"\n}')
+
+      url = undefined
+      try
+        @room.robot.e.auth.create_idm_auth_config(url)
+        return done(new Error('Should have failed with undef url'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+        .to
+        .equal('Error: Auth endpoint configuration is missing url:' +
+            ' {\n  "verb": "POST"\n}')
+
+      url = null
+      try
+        @room.robot.e.auth.create_idm_auth_config(url)
+        return done(new Error('Should have failed with null url'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+        .to
+        .equal('Error: Auth endpoint configuration is missing url:' +
+            ' {\n  "url": null,\n  "verb": "POST"\n}')
+
+      url = {}
+      try
+        @room.robot.e.auth.create_idm_auth_config(url)
+        return done(new Error('Should have failed with wrong type url'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+        .to
+        .equal('Error: Auth endpoint url is empty: ' +
+            '{\n  "url": {},\n  "verb": "POST"\n}')
+
+      done()
+
+    it 'Should be successful if registered with parametrized helper method with tenant info', (done) ->
+      url = "http://myidmservice.example.com"
+      verb = "POST"
+      tenant_username = "mytenant"
+      tenant_password = "verySecureTenantPassword"
+      try
+        idm_auth = @room.robot.e.auth.create_idm_auth_config(
+          url, tenant_username, tenant_password)
+        expect(idm_auth).to.exist
+        expect(idm_auth).to.have.keys(["type", "params"])
+        expect(idm_auth.type).to.equal(auth_lib.TYPES.IDM_AUTH)
+        expect(idm_auth.params).to.be.an('object')
+        expect(idm_auth.params).to.have.keys(["endpoint", "tenant"])
+        expect(idm_auth.params.endpoint).to.have.keys(["url", "verb"])
+        expect(idm_auth.params.endpoint.verb).to.equal(verb)
+        expect(idm_auth.params.endpoint.url).to.equal(url)
+        expect(idm_auth.params.tenant.username).to.equal(tenant_username)
+        expect(idm_auth.params.tenant.password).to.equal(tenant_password)
+        @room.robot.e.registerIntegration(metadata, idm_auth)
+        done()
+      catch e
+        done(e)
+
+    it 'Should be successful if registered with parametrized helper method with empty tenant info', (done) ->
+      url = "http://myidmservice.example.com"
+      verb = "POST"
+      tenant_username = ""
+      tenant_password = ""
+      try
+        idm_auth = @room.robot.e.auth.create_idm_auth_config(
+          url, tenant_username, tenant_password)
+        expect(idm_auth).to.exist
+        expect(idm_auth).to.have.keys(["type", "params"])
+        expect(idm_auth.type).to.equal(auth_lib.TYPES.IDM_AUTH)
+        expect(idm_auth.params).to.be.an('object')
+        expect(idm_auth.params).to.have.keys(["endpoint"])
+        expect(idm_auth.params.endpoint).to.have.keys(["url", "verb"])
+        expect(idm_auth.params.endpoint.verb).to.equal(verb)
+        expect(idm_auth.params.endpoint.url).to.equal(url)
+        expect(idm_auth.params.tenant).not.to.exist
+      catch e
+        done(e)
+
+      tenant_username = null
+      tenant_password = undefined
+      try
+        idm_auth = @room.robot.e.auth.create_idm_auth_config(
+          url, tenant_username, tenant_password)
+        expect(idm_auth).to.exist
+        expect(idm_auth).to.have.keys(["type", "params"])
+        expect(idm_auth.type).to.equal(auth_lib.TYPES.IDM_AUTH)
+        expect(idm_auth.params).to.be.an('object')
+        expect(idm_auth.params).to.have.keys(["endpoint"])
+        expect(idm_auth.params.endpoint).to.have.keys(["url", "verb"])
+        expect(idm_auth.params.endpoint.verb).to.equal(verb)
+        expect(idm_auth.params.endpoint.url).to.equal(url)
+        expect(idm_auth.params.tenant).not.to.exist
+      catch e
+        done(e)
+
+      done()
+
+    it 'Should fail if parametrized helper method has invalid inputs for tenant', (done) ->
+      url = "http://myidmservice.example.com"
+      try
+        @room.robot.e.auth.create_idm_auth_config(url, {}, "something")
+        return done(new Error('Should have failed with empty url'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+        .to
+        .equal('Error: Tenant username is not valid = {}')
+
+      try
+        @room.robot.e.auth.create_idm_auth_config(url, "something", 9)
+        return done(new Error('Should have failed with empty url'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+        .to
+        .equal('Error: Tenant password is not valid = 9')
+
+      try
+        @room.robot.e.auth.create_idm_auth_config(url, "myusername", "")
+        return done(new Error('Should have failed with empty url'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+        .to
+        .equal('Error: Tenant password is not valid = ""')
+
+      try
+        @room.robot.e.auth.create_idm_auth_config(url, "", "mypassword")
+        return done(new Error('Should have failed with empty url'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+        .to
+        .equal('Error: Tenant username is not valid = ""')
+
+      done()
+
+    it 'Should fail if idm auth config has invalid endpoint configs', (done) ->
       this.timeout(5000)
       # Params are undef
       idm_auth =

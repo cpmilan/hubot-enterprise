@@ -92,7 +92,31 @@ format_auth_object = (auth_type, params) ->
     params: params
   }
 
+# Throws an error if any constraint fails
+validate_tenant_params = (tenant_params) ->
+  logger.debug("Validating tenant params #{JSON.stringify(tenant_params)}")
+  # Should cover undef case
+  if not _.isObject(tenant_params)
+    msg = "Tenant params is not of valid type = #{JSON.stringify(tenant_params)}"
+    logger.error(msg)
+    throw new Error(msg)
+
+  username = tenant_params.username
+  password = tenant_params.password
+
+  if not _.isString(username) or _.isEmpty(username)
+    msg = "Tenant username is not valid = #{JSON.stringify(username)}"
+    logger.error(msg)
+    throw new Error(msg)
+
+  if not _.isString(password) or _.isEmpty(password)
+    msg = "Tenant password is not valid = #{JSON.stringify(password)}"
+    logger.error(msg)
+    throw new Error(msg)
+
+
 # TODO: needs refactoring :)
+# Throws an error if any constraint fails
 validate_endpoint_params = (endpoint, type) ->
   if not endpoint
     msg = "You have an empty endpoint in your params: #{endpoint}"
@@ -136,6 +160,28 @@ validate_endpoint_params = (endpoint, type) ->
       msg = "Only POST verb supported for idm_auth endpoint"
       logger.error(msg)
       throw new Error(msg)
+
+
+create_basic_auth_config = (endpoint_url, endpoint_verb) ->
+  params =
+    endpoint:
+      url: endpoint_url
+      verb: endpoint_verb
+  return generate_basic_auth(params)
+
+create_idm_auth_config = (endpoint_url, tenant_username, tenant_password) ->
+  params =
+    endpoint:
+        url: endpoint_url
+        # Hardcode to POST since this is the current standard.
+        verb: "POST"
+
+  if tenant_password or tenant_username
+    params.tenant = {}
+    params.tenant.username = tenant_username
+    params.tenant.password = tenant_password
+
+  return generate_idm_auth(params)
 
 # Convenience method to generate BasicAuth object for registration.
 # Throws exception when validation fails.
@@ -194,6 +240,10 @@ generate_idm_auth = (params) ->
     # Bubble up
     throw e
 
+  # Tenant is optional, if present, needs to be validated.
+  if params.tenant
+    validate_tenant_params(params.tenant)
+
   auth = format_auth_object(TYPES.IDM_AUTH, params)
 
   logger.debug("Successfully generated IdMAuth: #{auth}")
@@ -227,6 +277,8 @@ module.exports =
   generate_idm_auth: generate_idm_auth
   setup_auth_client: setup_auth_client
   validate_authentication: validate_authentication
+  create_basic_auth_config: create_basic_auth_config
+  create_idm_auth_config: create_idm_auth_config
   env: env
   client: auth_client
   values: values
