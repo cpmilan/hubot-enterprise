@@ -676,11 +676,12 @@ describe 'Authentication', ->
     it 'Should be successful if registered with parametrized helper method with tenant info', (done) ->
       url = "http://myidmservice.example.com"
       verb = "POST"
-      tenant_username = "mytenant"
+      tenant_username = "tenantUser1"
       tenant_password = "verySecureTenantPassword"
+      tenant_name = "group1"
       try
         idm_auth = @room.robot.e.auth.create_idm_auth_config(
-          url, tenant_username, tenant_password)
+          url, tenant_username, tenant_password, tenant_name)
         expect(idm_auth).to.exist
         expect(idm_auth).to.have.keys(["type", "params"])
         expect(idm_auth.type).to.equal(auth_lib.TYPES.IDM_AUTH)
@@ -691,6 +692,7 @@ describe 'Authentication', ->
         expect(idm_auth.params.endpoint.url).to.equal(url)
         expect(idm_auth.params.tenant.username).to.equal(tenant_username)
         expect(idm_auth.params.tenant.password).to.equal(tenant_password)
+        expect(idm_auth.params.tenant.name).to.equal(tenant_name)
         @room.robot.e.registerIntegration(metadata, idm_auth)
         done()
       catch e
@@ -701,9 +703,10 @@ describe 'Authentication', ->
       verb = "POST"
       tenant_username = ""
       tenant_password = ""
+      tenant_name = ""
       try
         idm_auth = @room.robot.e.auth.create_idm_auth_config(
-          url, tenant_username, tenant_password)
+          url, tenant_username, tenant_password, tenant_name)
         expect(idm_auth).to.exist
         expect(idm_auth).to.have.keys(["type", "params"])
         expect(idm_auth.type).to.equal(auth_lib.TYPES.IDM_AUTH)
@@ -718,9 +721,25 @@ describe 'Authentication', ->
 
       tenant_username = null
       tenant_password = undefined
+      tenant_name = null
       try
         idm_auth = @room.robot.e.auth.create_idm_auth_config(
-          url, tenant_username, tenant_password)
+          url, tenant_username, tenant_password, tenant_name)
+        expect(idm_auth).to.exist
+        expect(idm_auth).to.have.keys(["type", "params"])
+        expect(idm_auth.type).to.equal(auth_lib.TYPES.IDM_AUTH)
+        expect(idm_auth.params).to.be.an('object')
+        expect(idm_auth.params).to.have.keys(["endpoint"])
+        expect(idm_auth.params.endpoint).to.have.keys(["url", "verb"])
+        expect(idm_auth.params.endpoint.verb).to.equal(verb)
+        expect(idm_auth.params.endpoint.url).to.equal(url)
+        expect(idm_auth.params.tenant).not.to.exist
+      catch e
+        done(e)
+
+      try
+        # Omit tenant params
+        idm_auth = @room.robot.e.auth.create_idm_auth_config(url)
         expect(idm_auth).to.exist
         expect(idm_auth).to.have.keys(["type", "params"])
         expect(idm_auth.type).to.equal(auth_lib.TYPES.IDM_AUTH)
@@ -738,8 +757,8 @@ describe 'Authentication', ->
     it 'Should fail if parametrized helper method has invalid inputs for tenant', (done) ->
       url = "http://myidmservice.example.com"
       try
-        @room.robot.e.auth.create_idm_auth_config(url, {}, "something")
-        return done(new Error('Should have failed with empty url'))
+        @room.robot.e.auth.create_idm_auth_config(url, {}, "something", "Mr.T")
+        return done(new Error('Should have failed differently'))
       catch e
         expect(e).to.exist
         expect(e.toString())
@@ -747,8 +766,8 @@ describe 'Authentication', ->
         .equal('Error: Tenant username is not valid = {}')
 
       try
-        @room.robot.e.auth.create_idm_auth_config(url, "something", 9)
-        return done(new Error('Should have failed with empty url'))
+        @room.robot.e.auth.create_idm_auth_config(url, "something", 9, "Mr.T")
+        return done(new Error('Should have failed differently'))
       catch e
         expect(e).to.exist
         expect(e.toString())
@@ -756,8 +775,8 @@ describe 'Authentication', ->
         .equal('Error: Tenant password is not valid = 9')
 
       try
-        @room.robot.e.auth.create_idm_auth_config(url, "myusername", "")
-        return done(new Error('Should have failed with empty url'))
+        @room.robot.e.auth.create_idm_auth_config(url, "myusername", "", "Mr.T")
+        return done(new Error('Should have failed differently'))
       catch e
         expect(e).to.exist
         expect(e.toString())
@@ -765,13 +784,22 @@ describe 'Authentication', ->
         .equal('Error: Tenant password is not valid = ""')
 
       try
-        @room.robot.e.auth.create_idm_auth_config(url, "", "mypassword")
-        return done(new Error('Should have failed with empty url'))
+        @room.robot.e.auth.create_idm_auth_config(url, "", "mypassword", "Mr.T")
+        return done(new Error('Should have failed differently'))
       catch e
         expect(e).to.exist
         expect(e.toString())
         .to
         .equal('Error: Tenant username is not valid = ""')
+
+      try
+        @room.robot.e.auth.create_idm_auth_config(url, "u", "p", "")
+        return done(new Error('Should have failed differently'))
+      catch e
+        expect(e).to.exist
+        expect(e.toString())
+        .to
+        .equal('Error: Tenant name is not valid = ""')
 
       done()
 
