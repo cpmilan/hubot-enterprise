@@ -103,6 +103,12 @@ validate_tenant_params = (tenant_params) ->
 
   username = tenant_params.username
   password = tenant_params.password
+  name = tenant_params.name
+
+  if not _.isString(name) or _.isEmpty(name)
+    msg = "Tenant name is not valid = #{JSON.stringify(name)}"
+    logger.error(msg)
+    throw new Error(msg)
 
   if not _.isString(username) or _.isEmpty(username)
     msg = "Tenant username is not valid = #{JSON.stringify(username)}"
@@ -169,17 +175,18 @@ create_basic_auth_config = (endpoint_url, endpoint_verb) ->
       verb: endpoint_verb
   return generate_basic_auth(params)
 
-create_idm_auth_config = (endpoint_url, tenant_username, tenant_password) ->
+create_idm_auth_config = (endpoint_url, tenant_username, tenant_password, tenant_name) ->
   params =
     endpoint:
         url: endpoint_url
         # Hardcode to POST since this is the current standard.
         verb: "POST"
 
-  if tenant_password or tenant_username
+  if tenant_password or tenant_username or tenant_name
     params.tenant = {}
     params.tenant.username = tenant_username
     params.tenant.password = tenant_password
+    params.tenant.name = tenant_name
 
   return generate_idm_auth(params)
 
