@@ -52,7 +52,7 @@ class Help
   process_help: (msg, registrar) ->
     # build help regex from help workds array
     help_re = @robot.respondPattern(new RegExp("("+@help_words.join('|')+")"+
-      "[ ]?(\\w+)?[ ]?(\\w+)?[ ]?(\\w+)?", 'i'))
+      "[ ]?([a-zA-Z\\-]+)?[ ]?([a-zA-Z\\-]+)?[ ]?([a-zA-Z\\-]+)?", 'i'))
     if (msg.match = msg.message.text.match(help_re))
       help = @show_help(registrar, msg.match[2], msg.match[3], msg.match[4])
       @robot.logger.debug help
