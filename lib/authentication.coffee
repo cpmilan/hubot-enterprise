@@ -48,6 +48,8 @@ errors =
 values =
   # Default to 30 minute token expiration
   DEFAULT_TOKEN_TTL: 1800
+  # Default to 30 minutes to expire the secrets stored in the Vault
+  DEFAULT_SECRETS_TTL: 1800
 
 BASIC_AUTH_DOCS = "https://github.com/eedevops/hubot-enterprise/wiki/api#supported-authentication-types"
 
@@ -65,11 +67,17 @@ validate_authentication = (authentication) ->
     logger.error(msg)
     return null
 
+  if !authentication.ttl
+    msg = "Auth secrets ttl not set, using default value = #{values.DEFAULT_SECRETS_TTL}"
+    logger.debug(msg)
+    authentication.ttl = values.DEFAULT_SECRETS_TTL
+
   # Generate the appropriate auth object based on its type.
   switch authentication.type
     when TYPES.BASIC_AUTH
       try
         auth = generate_basic_auth(authentication.params)
+        auth.ttl = authentication.ttl
         return auth
       catch e
         logger.error(e)
@@ -77,6 +85,7 @@ validate_authentication = (authentication) ->
     when TYPES.IDM_AUTH
       try
         auth = generate_idm_auth(authentication.params)
+        auth.ttl = authentication.ttl
         return auth
       catch e
         logger.error(e)
@@ -168,14 +177,16 @@ validate_endpoint_params = (endpoint, type) ->
       throw new Error(msg)
 
 
-create_basic_auth_config = (endpoint_url, endpoint_verb) ->
+create_basic_auth_config = (endpoint_url, endpoint_verb, secrets_ttl) ->
   params =
     endpoint:
       url: endpoint_url
       verb: endpoint_verb
-  return generate_basic_auth(params)
+  auth = generate_basic_auth(params)
+  auth.ttl = secrets_ttl || values.DEFAULT_SECRETS_TTL
+  return auth
 
-create_idm_auth_config = (endpoint_url, tenant_username, tenant_password, tenant_name) ->
+create_idm_auth_config = (endpoint_url, tenant_username, tenant_password, tenant_name, secrets_ttl) ->
   params =
     endpoint:
         url: endpoint_url
@@ -188,7 +199,9 @@ create_idm_auth_config = (endpoint_url, tenant_username, tenant_password, tenant
     params.tenant.password = tenant_password
     params.tenant.name = tenant_name
 
-  return generate_idm_auth(params)
+  auth = generate_idm_auth(params)
+  auth.ttl = secrets_ttl || values.DEFAULT_SECRETS_TTL
+  return auth
 
 # Convenience method to generate BasicAuth object for registration.
 # Throws exception when validation fails.
