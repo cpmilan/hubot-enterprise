@@ -572,6 +572,21 @@ describe 'Authentication', ->
       try
         basic_auth = @room.robot.e.auth.create_basic_auth_config(url, verb)
         # TODO: verify basic_auth object
+        expect(basic_auth.ttl).to.equal(auth_lib.values.DEFAULT_SECRETS_TTL)
+        @room.robot.e.registerIntegration(metadata, basic_auth)
+        done()
+      catch e
+        done(e)
+
+    it 'Should be successful if registered with parametrized helper method + custom ttl', (done) ->
+
+      url = "http://mybasicauth.example.com"
+      verb = "GET"
+      custom_ttl = 900
+      try
+        basic_auth = @room.robot.e.auth.create_basic_auth_config(url, verb, custom_ttl)
+        # TODO: verify basic_auth object
+        expect(basic_auth.ttl).to.equal(custom_ttl)
         @room.robot.e.registerIntegration(metadata, basic_auth)
         done()
       catch e
@@ -615,12 +630,31 @@ describe 'Authentication', ->
       try
         idm_auth = @room.robot.e.auth.create_idm_auth_config(url)
         expect(idm_auth).to.exist
-        expect(idm_auth).to.have.keys(["type", "params"])
+        expect(idm_auth).to.have.keys(["type", "params", "ttl"])
         expect(idm_auth.type).to.equal(auth_lib.TYPES.IDM_AUTH)
         expect(idm_auth.params).to.be.an('object')
         expect(idm_auth.params.endpoint).to.exist.and.have.keys(["url", "verb"])
         expect(idm_auth.params.endpoint.verb).to.equal(verb)
         expect(idm_auth.params.endpoint.url).to.equal(url)
+        expect(idm_auth.ttl).to.equal(auth_lib.values.DEFAULT_SECRETS_TTL)
+        @room.robot.e.registerIntegration(metadata, idm_auth)
+        done()
+      catch e
+        done(e)
+
+    it 'Should be successful if registered with customized ttl', (done) ->
+      url = "http://myidmservice.example.com"
+      verb = "POST"
+      try
+        idm_auth = @room.robot.e.auth.create_idm_auth_config(url)
+        expect(idm_auth).to.exist
+        expect(idm_auth).to.have.keys(["type", "params", "ttl"])
+        expect(idm_auth.type).to.equal(auth_lib.TYPES.IDM_AUTH)
+        expect(idm_auth.params).to.be.an('object')
+        expect(idm_auth.params.endpoint).to.exist.and.have.keys(["url", "verb"])
+        expect(idm_auth.params.endpoint.verb).to.equal(verb)
+        expect(idm_auth.params.endpoint.url).to.equal(url)
+        expect(idm_auth.ttl).to.equal(auth_lib.values.DEFAULT_SECRETS_TTL)
         @room.robot.e.registerIntegration(metadata, idm_auth)
         done()
       catch e
@@ -683,8 +717,36 @@ describe 'Authentication', ->
         idm_auth = @room.robot.e.auth.create_idm_auth_config(
           url, tenant_username, tenant_password, tenant_name)
         expect(idm_auth).to.exist
-        expect(idm_auth).to.have.keys(["type", "params"])
+        expect(idm_auth).to.have.keys(["type", "params", "ttl"])
         expect(idm_auth.type).to.equal(auth_lib.TYPES.IDM_AUTH)
+        expect(idm_auth.ttl).to.equal(auth_lib.values.DEFAULT_SECRETS_TTL)
+        expect(idm_auth.params).to.be.an('object')
+        expect(idm_auth.params).to.have.keys(["endpoint", "tenant"])
+        expect(idm_auth.params.endpoint).to.have.keys(["url", "verb"])
+        expect(idm_auth.params.endpoint.verb).to.equal(verb)
+        expect(idm_auth.params.endpoint.url).to.equal(url)
+        expect(idm_auth.params.tenant.username).to.equal(tenant_username)
+        expect(idm_auth.params.tenant.password).to.equal(tenant_password)
+        expect(idm_auth.params.tenant.name).to.equal(tenant_name)
+        @room.robot.e.registerIntegration(metadata, idm_auth)
+        done()
+      catch e
+        done(e)
+
+    it 'Should be successful if registered with tenant info and custom ttl', (done) ->
+      url = "http://myidmservice.example.com"
+      verb = "POST"
+      tenant_username = "tenantUser1"
+      tenant_password = "verySecureTenantPassword"
+      tenant_name = "group1"
+      custom_ttl = 900
+      try
+        idm_auth = @room.robot.e.auth.create_idm_auth_config(
+          url, tenant_username, tenant_password, tenant_name, custom_ttl)
+        expect(idm_auth).to.exist
+        expect(idm_auth).to.have.keys(["type", "params", "ttl"])
+        expect(idm_auth.type).to.equal(auth_lib.TYPES.IDM_AUTH)
+        expect(idm_auth.ttl).to.equal(custom_ttl)
         expect(idm_auth.params).to.be.an('object')
         expect(idm_auth.params).to.have.keys(["endpoint", "tenant"])
         expect(idm_auth.params.endpoint).to.have.keys(["url", "verb"])
@@ -708,7 +770,7 @@ describe 'Authentication', ->
         idm_auth = @room.robot.e.auth.create_idm_auth_config(
           url, tenant_username, tenant_password, tenant_name)
         expect(idm_auth).to.exist
-        expect(idm_auth).to.have.keys(["type", "params"])
+        expect(idm_auth).to.have.keys(["type", "params", "ttl"])
         expect(idm_auth.type).to.equal(auth_lib.TYPES.IDM_AUTH)
         expect(idm_auth.params).to.be.an('object')
         expect(idm_auth.params).to.have.keys(["endpoint"])
@@ -717,7 +779,7 @@ describe 'Authentication', ->
         expect(idm_auth.params.endpoint.url).to.equal(url)
         expect(idm_auth.params.tenant).not.to.exist
       catch e
-        done(e)
+        return done(e)
 
       tenant_username = null
       tenant_password = undefined
@@ -726,7 +788,7 @@ describe 'Authentication', ->
         idm_auth = @room.robot.e.auth.create_idm_auth_config(
           url, tenant_username, tenant_password, tenant_name)
         expect(idm_auth).to.exist
-        expect(idm_auth).to.have.keys(["type", "params"])
+        expect(idm_auth).to.have.keys(["type", "params", "ttl"])
         expect(idm_auth.type).to.equal(auth_lib.TYPES.IDM_AUTH)
         expect(idm_auth.params).to.be.an('object')
         expect(idm_auth.params).to.have.keys(["endpoint"])
@@ -735,13 +797,13 @@ describe 'Authentication', ->
         expect(idm_auth.params.endpoint.url).to.equal(url)
         expect(idm_auth.params.tenant).not.to.exist
       catch e
-        done(e)
+        return done(e)
 
       try
-        # Omit tenant params
+        # TODO: revise if omitting tenant params is a best practice.
         idm_auth = @room.robot.e.auth.create_idm_auth_config(url)
         expect(idm_auth).to.exist
-        expect(idm_auth).to.have.keys(["type", "params"])
+        expect(idm_auth).to.have.keys(["type", "params", "ttl"])
         expect(idm_auth.type).to.equal(auth_lib.TYPES.IDM_AUTH)
         expect(idm_auth.params).to.be.an('object')
         expect(idm_auth.params).to.have.keys(["endpoint"])
@@ -750,7 +812,7 @@ describe 'Authentication', ->
         expect(idm_auth.params.endpoint.url).to.equal(url)
         expect(idm_auth.params.tenant).not.to.exist
       catch e
-        done(e)
+        return done(e)
 
       done()
 
