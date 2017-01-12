@@ -142,6 +142,11 @@ describe 'help tests', ->
     example: "aa hello world",
     help: 'read ticket', type: 'respond'}, cb
 
+    @room.robot.e.create {action: 'read-all', entity: 'me'
+    regex_suffix: {re: "aa (.*)", optional: false},
+    example: "aa hello world",
+    help: 'read everything', type: 'respond'}, cb
+
     @room.robot.e.create {action: 'create', entity: 'ticket',
     regex_suffix: {optional: false}, help: 'help 1'}, cb
 
@@ -175,7 +180,7 @@ describe 'help tests', ->
         [ 'alice', '@hubot help test' ],
         [ 'hubot', '@alice help for hubot enterprise:\n'+
         '*test* Integration: short tests desc\n'+
-        '- *Verbs:* read, create, delete\n'+
+        '- *Verbs:* read, read-all, create, delete\n'+
         '- *Description:*\n'+
         'long tests desc\n' ]
       ]
@@ -219,7 +224,7 @@ describe 'help tests', ->
         [ 'hubot', '@alice help for hubot enterprise:\n'+
         'there is no such verb *remove* for integration *test*\n'+
         '*test* Integration: short tests desc\n'+
-        '- *Verbs:* read, create, delete\n'+
+        '- *Verbs:* read, read-all, create, delete\n'+
         '- *Description:*\n'+
         'long tests desc\n' ]
       ]
@@ -274,9 +279,28 @@ describe 'help tests', ->
         'there is no such verb *delere* for integration *test*, '+
         'did you mean *delete*?\n'+
         '*test* Integration: short tests desc\n'+
-        '- *Verbs:* read, create, delete\n'+
+        '- *Verbs:* read, read-all, create, delete\n'+
         '- *Description:*\n'+
         'long tests desc\n' ]
+      ]
+  it 'help with command that include a dash', ->
+    @room.user.say('bob', '@hubot help test read-all').then =>
+      expect(@room.messages).to.eql [
+        ['bob', '@hubot help test read-all']
+        ['hubot', '@bob help for hubot enterprise:\n'+
+        'calls for *test read-all*\n'+
+        '- *Entities*: me\n']
+      ]
+  it 'help with non-existent command that include a dash', ->
+    @room.user.say('bob', '@hubot help test read-most').then =>
+      expect(@room.messages).to.eql [
+        ['bob', '@hubot help test read-most']
+        ['hubot', '@bob help for hubot enterprise:\n'+
+        'there is no such verb *read-most* for integration *test*\n'+
+        '*test* Integration: short tests desc\n'+
+        '- *Verbs:* read, read-all, create, delete\n'+
+        '- *Description:*\n'+
+        'long tests desc\n']
       ]
 
 describe 'registerIntegration tests', ->

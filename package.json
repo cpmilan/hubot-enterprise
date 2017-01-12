@@ -1,6 +1,6 @@
 {
   "name": "hubot-enterprise",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "Hubot middleware and scripts for enterprise",
   "main": "index.coffee",
   "repository": {
