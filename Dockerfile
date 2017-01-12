@@ -28,7 +28,7 @@ ENV ADAPTER slack
 RUN mkdir /bot && \
     useradd -ms /bin/bash node && \
     chown -R node /bot && \
-    npm install -g yo@1.7.0 coffee-script eedevops/generator-hubot-enterprise
+    npm install -g yo@1.7.0 coffee-script eedevops/generator-hubot-enterprise#2c2234052148d6d620b80a281a40b804da09fffc
 
 WORKDIR /bot
 ADD . /he
