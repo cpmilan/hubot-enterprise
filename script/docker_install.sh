@@ -23,6 +23,13 @@
 # exit on errors
 set -e
 
+# This is a required env variable.
+if [ -z "$ADAPTER" ]
+then
+  echo "ERROR: ADAPTER environment variable must be set"
+  exit -1
+fi
+
 # set npm proxy- if exists in env
 if [ -n "$http_proxy" ]
 then
@@ -34,8 +41,14 @@ then
   npm config set https-proxy ${https_proxy}
 fi
 
+# Fix for git communication on proxy-bound environments.
+if [ -n "$http_proxy" ] || [ -n "$https_proxy" ] 
+then
+  git config --global url.https://github.com/.insteadOf git://github.com/
+fi
+
 # install adapter if not slack
-if [ ${ADAPTER} != "slack" ]
+if [ "${ADAPTER}" != "slack" ]
 then
   echo "installing adapter ${ADAPTER}"
   npm install --save hubot-${ADAPTER}
